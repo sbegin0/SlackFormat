@@ -1,5 +1,5 @@
 import re
-from typing import List, Dict, Any, Union
+from typing import List, Dict, Any
 
 def md_to_richtext(md_text: str) -> dict:
     """
@@ -80,74 +80,127 @@ def _parse_inline_formatting(text: str) -> List[Dict[str, Any]]:
             # Bold text
             end = _find_closing_delimiter(text, i, '*')
             if end != -1:
-                bold_text = text[i+1:end]
-                elements.append({
-                    "type": "text", 
-                    "text": bold_text, 
-                    "style": {"bold": True}
-                })
-                i = end + 1
-                continue
+                # Check for empty content between markers
+                if end == i + 1:
+                    # Empty **|* markers, treat as literal text
+                    elements.append({"type": "text", "text": text[i:end + 1]})
+                    i = end + 1
+                else:
+                    bold_text = text[i+1:end]
+                    elements.append({
+                        "type": "text", 
+                        "text": bold_text, 
+                        "style": {"bold": True}
+                    })
+                    i = end + 1
+            else:
+                # Unclosed *, treat as plain text
+                elements.append({"type": "text", "text": text[i:]})
+                break
                 
         elif text[i] == '_' and i + 1 < len(text):
             # Italic text
             end = _find_closing_delimiter(text, i, '_')
             if end != -1:
-                italic_text = text[i+1:end]
-                elements.append({
-                    "type": "text", 
-                    "text": italic_text, 
-                    "style": {"italic": True}
-                })
-                i = end + 1
-                continue
+                # Check for empty content between markers
+                if end == i + 1:
+                    # Empty _ markers, treat as literal text
+                    elements.append({"type": "text", "text": text[i:end + 1]})
+                    i = end + 1
+                else:
+                    italic_text = text[i+1:end]
+                    elements.append({
+                        "type": "text", 
+                        "text": italic_text, 
+                        "style": {"italic": True}
+                    })
+                    i = end + 1
+            else:
+                # Unclosed _, treat as plain text
+                elements.append({"type": "text", "text": text[i:]})
+                break
                 
         elif text[i] == '~' and i + 1 < len(text):
             # Strike-through text
             end = _find_closing_delimiter(text, i, '~')
             if end != -1:
-                strike_text = text[i+1:end]
-                elements.append({
-                    "type": "text", 
-                    "text": strike_text, 
-                    "style": {"strike": True}
-                })
-                i = end + 1
-                continue
+                # Check for empty content between markers
+                if end == i + 1:
+                    # Empty ~ markers, treat as literal text
+                    elements.append({"type": "text", "text": text[i:end + 1]})
+                    i = end + 1
+                else:
+                    strike_text = text[i+1:end]
+                    elements.append({
+                        "type": "text", 
+                        "text": strike_text, 
+                        "style": {"strike": True}
+                    })
+                    i = end + 1
+            else:
+                # Unclosed ~, treat as plain text
+                elements.append({"type": "text", "text": text[i:]})
+                break
                 
         elif text[i] == '`' and i + 1 < len(text):
             # Code text
             end = _find_closing_delimiter(text, i, '`')
             if end != -1:
-                code_text = text[i+1:end]
-                elements.append({
-                    "type": "text", 
-                    "text": code_text, 
-                    "style": {"code": True}
-                })
-                i = end + 1
-                continue
+                # Check for empty content between markers
+                if end == i + 1:
+                    # Empty ` markers, treat as literal text
+                    elements.append({"type": "text", "text": text[i:end + 1]})
+                    i = end + 1
+                else:
+                    code_text = text[i+1:end]
+                    elements.append({
+                        "type": "text", 
+                        "text": code_text, 
+                        "style": {"code": True}
+                    })
+                    i = end + 1
+            else:
+                # Unclosed `, treat as plain text
+                elements.append({"type": "text", "text": text[i:]})
+                break
                 
         elif text[i] == '<' and i + 1 < len(text):
             # Link
             end = text.find('>', i)
             if end != -1:
-                link_content = text[i+1:end]
-                if '|' in link_content:
-                    url, display_text = link_content.split('|', 1)
-                    elements.append({
-                        "type": "link",
-                        "url": url,
-                        "text": display_text
-                    })
+                # Check for empty content between < >
+                if end == i + 1:
+                    # Empty <> markers, treat as literal text
+                    elements.append({"type": "text", "text": text[i:end + 1]})
+                    i = end + 1
                 else:
-                    elements.append({
-                        "type": "link",
-                        "url": link_content,
-                        "text": link_content
-                    })
-                i = end + 1
-                continue
+                    link_content = text[i+1:end]
+                    if '|' in link_content:
+                        url, display_text = link_content.split('|', 1)
+                        if url.strip() and display_text.strip():
+                            elements.append({
+                                "type": "link",
+                                "url": url.strip(),
+                                "text": display_text.strip()
+                            })
+                        else:
+                            # Invalid link content, treat as text
+                            elements.append({"type": "text", "text": text[i:end + 1]})
+                    else:
+                        if link_content.strip():
+                            elements.append({
+                                "type": "link",
+                                "url": link_content.strip(),
+                                "text": link_content.strip()
+                            })
+                        else:
+                            # Empty link content, treat as text
+                            elements.append({"type": "text", "text": text[i:end + 1]})
+                    i = end + 1
+            else:
+                # Unclosed <, treat as plain text
+                elements.append({"type": "text", "text": text[i:]})
+                break
         
         # Find the next special character or end of string
         next_special = _find_next_special_char(text, i)

@@ -1,5 +1,5 @@
 import re
-from typing import Dict, List, Any, Union
+from typing import Dict, List, Any
 
 def blockkit_to_richtext(blockkit_obj: dict) -> dict:
     """
@@ -166,73 +166,84 @@ def _parse_markdown_inline(text: str) -> List[Dict[str, Any]]:
     i = 0
     
     while i < len(text):
+        # Handle plain text until we find a special character
+        next_special = _find_next_markdown_char(text, i)
+        if next_special == -1:
+            # No more special characters, add remaining text
+            remaining_text = text[i:]
+            if remaining_text:
+                elements.append({"type": "text", "text": remaining_text})
+            break
+        elif next_special > i:
+            # Add plain text before the special character
+            plain_text = text[i:next_special]
+            if plain_text:
+                elements.append({"type": "text", "text": plain_text})
+            i = next_special
+            continue
+
         # Bold: *text* or **text**
         if text[i:i+2] == '**':
             end = text.find('**', i + 2)
-            if end != -1 and end > i + 2:  # Ensure non-empty content
+            if end != -1 and end > i + 2:
                 bold_text = text[i+2:end]
-                elements.append({
-                    "type": "text", 
-                    "text": bold_text, 
-                    "style": {"bold": True}
-                })
+                elements.append({"type": "text", "text": bold_text, "style": {"bold": True}})
                 i = end + 2
-                continue
+            else:
+                # Unclosed **, treat as text
+                elements.append({"type": "text", "text": text[i:]})
+                break
         elif text[i] == '*':
             end = text.find('*', i + 1)
-            if end != -1 and end > i + 1:  # Ensure non-empty content
+            if end != -1 and end > i + 1:
                 bold_text = text[i+1:end]
-                elements.append({
-                    "type": "text", 
-                    "text": bold_text, 
-                    "style": {"bold": True}
-                })
+                elements.append({"type": "text", "text": bold_text, "style": {"bold": True}})
                 i = end + 1
-                continue
+            else:
+                # Unclosed *, treat as text
+                elements.append({"type": "text", "text": text[i:]})
+                break
                 
         # Italic: _text_
         elif text[i] == '_':
             end = text.find('_', i + 1)
-            if end != -1 and end > i + 1:  # Ensure non-empty content
+            if end != -1 and end > i + 1:
                 italic_text = text[i+1:end]
-                elements.append({
-                    "type": "text", 
-                    "text": italic_text, 
-                    "style": {"italic": True}
-                })
+                elements.append({"type": "text", "text": italic_text, "style": {"italic": True}})
                 i = end + 1
-                continue
+            else:
+                # Unclosed _, treat as text
+                elements.append({"type": "text", "text": text[i:]})
+                break
                 
         # Strike: ~text~
         elif text[i] == '~':
             end = text.find('~', i + 1)
-            if end != -1 and end > i + 1:  # Ensure non-empty content
+            if end != -1 and end > i + 1:
                 strike_text = text[i+1:end]
-                elements.append({
-                    "type": "text", 
-                    "text": strike_text, 
-                    "style": {"strike": True}
-                })
+                elements.append({"type": "text", "text": strike_text, "style": {"strike": True}})
                 i = end + 1
-                continue
+            else:
+                # Unclosed ~, treat as text
+                elements.append({"type": "text", "text": text[i:]})
+                break
                 
         # Code: `text`
         elif text[i] == '`':
             end = text.find('`', i + 1)
-            if end != -1 and end > i + 1:  # Ensure non-empty content
+            if end != -1 and end > i + 1:
                 code_text = text[i+1:end]
-                elements.append({
-                    "type": "text", 
-                    "text": code_text, 
-                    "style": {"code": True}
-                })
+                elements.append({"type": "text", "text": code_text, "style": {"code": True}})
                 i = end + 1
-                continue
+            else:
+                # Unclosed `, treat as text
+                elements.append({"type": "text", "text": text[i:]})
+                break
                 
         # Links: <url|text> or <url>
         elif text[i] == '<':
             end = text.find('>', i)
-            if end != -1 and end > i + 1:  # Ensure non-empty content
+            if end != -1 and end > i + 1:
                 link_content = text[i+1:end]
                 if '|' in link_content:
                     parts = link_content.split('|', 1)
@@ -258,25 +269,15 @@ def _parse_markdown_inline(text: str) -> List[Dict[str, Any]]:
                         # Empty link, treat as text
                         elements.append({"type": "text", "text": text[i:end+1]})
                 i = end + 1
-                continue
-        
-        # Find next special character
-        next_special = _find_next_markdown_char(text, i)
-        if next_special == -1:
-            # Rest is plain text
-            if i < len(text):
-                remaining_text = text[i:]
-                if remaining_text:
-                    elements.append({"type": "text", "text": remaining_text})
-            break
+            else:
+                # Unclosed <, treat as text
+                elements.append({"type": "text", "text": text[i:]})
+                break
         else:
-            # Add plain text up to special char
-            if next_special > i:
-                plain_text = text[i:next_special]
-                if plain_text:
-                    elements.append({"type": "text", "text": plain_text})
-            i = next_special
-    
+            # Not a special character, treat as text
+            elements.append({"type": "text", "text": text[i]})
+            i += 1
+
     return elements
 
 def _find_next_markdown_char(text: str, start: int) -> int:

@@ -1,4 +1,4 @@
-from typing import Dict, List, Any, Union
+from typing import Dict, List, Any
 
 def richtext_to_blockkit(richtext_obj: dict) -> dict:
     """
