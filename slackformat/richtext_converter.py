@@ -48,7 +48,7 @@ def _convert_rich_text_elements(elements: List[Dict[str, Any]]) -> str:
             # Handle other types as needed
             result_parts.append("")
     
-    return "\n".join(result_parts)
+    return "\n".join(filter(None, result_parts))  # Filter out empty strings
 
 def _convert_rich_text_section(section: Dict[str, Any]) -> str:
     """Convert a rich text section to markdown."""
@@ -70,10 +70,11 @@ def _convert_rich_text_list(list_obj: Dict[str, Any]) -> str:
                 result_parts.append(f"• {item_text}")
         else:
             # Handle other item types
+            item_text = str(item)
             if list_style == "ordered":
-                result_parts.append(f"{i+1}. {str(item)}")
+                result_parts.append(f"{i+1}. {item_text}")
             else:
-                result_parts.append(f"• {str(item)}")
+                result_parts.append(f"• {item_text}")
     
     return "\n".join(result_parts)
 
@@ -88,15 +89,16 @@ def _convert_text_elements(elements: List[Dict[str, Any]]) -> str:
             text = element.get("text", "")
             style = element.get("style", {})
             
-            # Apply formatting based on style
+            # Apply formatting based on style - order matters for readability
+            # Apply in order: code, bold, italic, strike (innermost to outermost)
+            if style.get("code"):
+                text = f"`{text}`"
             if style.get("bold"):
                 text = f"*{text}*"
             if style.get("italic"):
                 text = f"_{text}_"
             if style.get("strike"):
                 text = f"~{text}~"
-            if style.get("code"):
-                text = f"`{text}`"
             
             result_parts.append(text)
             
@@ -121,8 +123,8 @@ def _convert_text_elements(elements: List[Dict[str, Any]]) -> str:
             result_parts.append(f"<@{user_id}>")
             
         else:
-            # Fallback for unknown element types
-            text = element.get("text", str(element))
+            # Fallback for unknown element types - try to extract text
+            text = element.get("text", element.get("value", str(element)))
             result_parts.append(text)
     
     return "".join(result_parts)

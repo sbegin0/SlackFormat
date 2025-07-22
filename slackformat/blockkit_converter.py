@@ -35,7 +35,7 @@ def blockkit_to_richtext(blockkit_obj: dict) -> dict:
         text_content = _extract_text_from_block(blockkit_obj)
         return {
             "type": "rich_text_section",
-            "elements": [{"type": "text", "text": text_content}]
+            "elements": [{"type": "text", "text": text_content}] if text_content else []
         }
 
 def _convert_section_block(section: Dict[str, Any]) -> Dict[str, Any]:
@@ -55,22 +55,23 @@ def _convert_section_block(section: Dict[str, Any]) -> Dict[str, Any]:
         }
     else:
         # Fallback
+        text_content = str(text_obj.get("text", "")) if isinstance(text_obj, dict) else str(text_obj)
         return {
             "type": "rich_text_section",
-            "elements": [{"type": "text", "text": str(text_obj)}]
+            "elements": [{"type": "text", "text": text_content}] if text_content else []
         }
 
 def _convert_header_block(header: Dict[str, Any]) -> Dict[str, Any]:
     """Convert a header block to rich text."""
     text_obj = header.get("text", {})
-    text_content = text_obj.get("text", "")
+    text_content = text_obj.get("text", "") if isinstance(text_obj, dict) else str(text_obj)
     
     # Headers are typically bold in rich text
     return {
         "type": "rich_text_section",
         "elements": [
             {"type": "text", "text": text_content, "style": {"bold": True}}
-        ]
+        ] if text_content else []
     }
 
 def _convert_context_block(context: Dict[str, Any]) -> Dict[str, Any]:
@@ -86,9 +87,12 @@ def _convert_context_block(context: Dict[str, Any]) -> Dict[str, Any]:
             rich_elements.extend(parsed)
         elif element.get("type") == "plain_text":
             plain_text = element.get("text", "")
-            rich_elements.append({"type": "text", "text": plain_text})
+            if plain_text:
+                rich_elements.append({"type": "text", "text": plain_text})
         else:
-            rich_elements.append({"type": "text", "text": str(element)})
+            text_content = _extract_text_from_block(element)
+            if text_content:
+                rich_elements.append({"type": "text", "text": text_content})
     
     return {
         "type": "rich_text_section",
@@ -97,7 +101,7 @@ def _convert_context_block(context: Dict[str, Any]) -> Dict[str, Any]:
 
 def _markdown_to_richtext(markdown: str) -> Dict[str, Any]:
     """Convert markdown text to rich text object."""
-    if not markdown:
+    if not markdown or not markdown.strip():
         return {"type": "rich_text_section", "elements": []}
     
     # Split by lines for lists and blocks
@@ -113,32 +117,35 @@ def _markdown_to_richtext(markdown: str) -> Dict[str, Any]:
         if re.match(r'^[•\-\*]\s+', line):
             list_text = re.sub(r'^[•\-\*]\s+', '', line)
             elements = _parse_markdown_inline(list_text)
-            sections.append({
-                "type": "rich_text_list",
-                "style": "bullet",
-                "elements": [{
-                    "type": "rich_text_section",
-                    "elements": elements
-                }]
-            })
+            if elements:
+                sections.append({
+                    "type": "rich_text_list",
+                    "style": "bullet",
+                    "elements": [{
+                        "type": "rich_text_section",
+                        "elements": elements
+                    }]
+                })
         elif re.match(r'^\d+\.\s+', line):
             list_text = re.sub(r'^\d+\.\s+', '', line)
             elements = _parse_markdown_inline(list_text)
-            sections.append({
-                "type": "rich_text_list",
-                "style": "ordered",
-                "elements": [{
-                    "type": "rich_text_section", 
-                    "elements": elements
-                }]
-            })
+            if elements:
+                sections.append({
+                    "type": "rich_text_list",
+                    "style": "ordered",
+                    "elements": [{
+                        "type": "rich_text_section", 
+                        "elements": elements
+                    }]
+                })
         else:
             # Regular text with inline formatting
             elements = _parse_markdown_inline(line)
-            sections.append({
-                "type": "rich_text_section",
-                "elements": elements
-            })
+            if elements:
+                sections.append({
+                    "type": "rich_text_section",
+                    "elements": elements
+                })
     
     if len(sections) > 1:
         return {
@@ -152,6 +159,9 @@ def _markdown_to_richtext(markdown: str) -> Dict[str, Any]:
 
 def _parse_markdown_inline(text: str) -> List[Dict[str, Any]]:
     """Parse inline markdown formatting."""
+    if not text:
+        return []
+        
     elements = []
     i = 0
     
@@ -159,7 +169,7 @@ def _parse_markdown_inline(text: str) -> List[Dict[str, Any]]:
         # Bold: *text* or **text**
         if text[i:i+2] == '**':
             end = text.find('**', i + 2)
-            if end != -1:
+            if end != -1 and end > i + 2:  # Ensure non-empty content
                 bold_text = text[i+2:end]
                 elements.append({
                     "type": "text", 
@@ -170,7 +180,7 @@ def _parse_markdown_inline(text: str) -> List[Dict[str, Any]]:
                 continue
         elif text[i] == '*':
             end = text.find('*', i + 1)
-            if end != -1:
+            if end != -1 and end > i + 1:  # Ensure non-empty content
                 bold_text = text[i+1:end]
                 elements.append({
                     "type": "text", 
@@ -183,7 +193,7 @@ def _parse_markdown_inline(text: str) -> List[Dict[str, Any]]:
         # Italic: _text_
         elif text[i] == '_':
             end = text.find('_', i + 1)
-            if end != -1:
+            if end != -1 and end > i + 1:  # Ensure non-empty content
                 italic_text = text[i+1:end]
                 elements.append({
                     "type": "text", 
@@ -196,7 +206,7 @@ def _parse_markdown_inline(text: str) -> List[Dict[str, Any]]:
         # Strike: ~text~
         elif text[i] == '~':
             end = text.find('~', i + 1)
-            if end != -1:
+            if end != -1 and end > i + 1:  # Ensure non-empty content
                 strike_text = text[i+1:end]
                 elements.append({
                     "type": "text", 
@@ -209,7 +219,7 @@ def _parse_markdown_inline(text: str) -> List[Dict[str, Any]]:
         # Code: `text`
         elif text[i] == '`':
             end = text.find('`', i + 1)
-            if end != -1:
+            if end != -1 and end > i + 1:  # Ensure non-empty content
                 code_text = text[i+1:end]
                 elements.append({
                     "type": "text", 
@@ -222,21 +232,31 @@ def _parse_markdown_inline(text: str) -> List[Dict[str, Any]]:
         # Links: <url|text> or <url>
         elif text[i] == '<':
             end = text.find('>', i)
-            if end != -1:
+            if end != -1 and end > i + 1:  # Ensure non-empty content
                 link_content = text[i+1:end]
                 if '|' in link_content:
-                    url, display_text = link_content.split('|', 1)
-                    elements.append({
-                        "type": "link",
-                        "url": url,
-                        "text": display_text
-                    })
+                    parts = link_content.split('|', 1)
+                    url, display_text = parts[0].strip(), parts[1].strip()
+                    if url and display_text:
+                        elements.append({
+                            "type": "link",
+                            "url": url,
+                            "text": display_text
+                        })
+                    else:
+                        # Malformed link, treat as text
+                        elements.append({"type": "text", "text": text[i:end+1]})
                 else:
-                    elements.append({
-                        "type": "link", 
-                        "url": link_content,
-                        "text": link_content
-                    })
+                    url = link_content.strip()
+                    if url:
+                        elements.append({
+                            "type": "link", 
+                            "url": url,
+                            "text": url
+                        })
+                    else:
+                        # Empty link, treat as text
+                        elements.append({"type": "text", "text": text[i:end+1]})
                 i = end + 1
                 continue
         
@@ -245,12 +265,16 @@ def _parse_markdown_inline(text: str) -> List[Dict[str, Any]]:
         if next_special == -1:
             # Rest is plain text
             if i < len(text):
-                elements.append({"type": "text", "text": text[i:]})
+                remaining_text = text[i:]
+                if remaining_text:
+                    elements.append({"type": "text", "text": remaining_text})
             break
         else:
             # Add plain text up to special char
             if next_special > i:
-                elements.append({"type": "text", "text": text[i:next_special]})
+                plain_text = text[i:next_special]
+                if plain_text:
+                    elements.append({"type": "text", "text": plain_text})
             i = next_special
     
     return elements
@@ -265,7 +289,7 @@ def _find_next_markdown_char(text: str, start: int) -> int:
             positions.append(pos)
     return min(positions) if positions else -1
 
-def _extract_text_from_block(block: Dict[str, Any]) -> str:
+def _extract_text_from_block(block: Any) -> str:
     """Extract any text content from a block object."""
     if isinstance(block, str):
         return block
@@ -273,17 +297,18 @@ def _extract_text_from_block(block: Dict[str, Any]) -> str:
         # Look for common text fields
         for field in ['text', 'value', 'content', 'title']:
             if field in block:
-                if isinstance(block[field], str):
-                    return block[field]
-                elif isinstance(block[field], dict) and 'text' in block[field]:
-                    return block[field]['text']
+                value = block[field]
+                if isinstance(value, str):
+                    return value
+                elif isinstance(value, dict) and 'text' in value:
+                    return str(value['text'])
         # Recursively search for text
         for value in block.values():
             if isinstance(value, (str, dict, list)):
                 result = _extract_text_from_block(value)
                 if result:
                     return result
-    elif isinstance(block, list):
+    elif isinstance(block, list) and block:  # Only process non-empty lists
         for item in block:
             result = _extract_text_from_block(item)
             if result:
