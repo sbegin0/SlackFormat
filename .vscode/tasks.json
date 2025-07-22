@@ -1,0 +1,15 @@
+{
+	"version": "2.0.0",
+	"tasks": [
+		{
+			"type": "shell",
+			"label": "Run pytest for SlackFormat",
+			"command": "/Users/sambegin/Desktop/blocked/.venv/bin/python -m pytest",
+			"group": "test",
+			"isBackground": false,
+			"problemMatcher": [
+				"$pytest"
+			]
+		}
+	]
+}
