@@ -51,14 +51,13 @@ def parse_markdown_to_elements(text: str) -> List[Dict[str, Any]]:
                 continue
 
         # Plain text segment
-        next_special = _find_next_special_char(text, i)
+        next_special = _find_next_special_char(text, i + 1)
         if next_special == -1:
             if i < len(text):
                 elements.append({"type": "text", "text": text[i:]})
             break
         else:
-            if next_special > i:
-                elements.append({"type": "text", "text": text[i:next_special]})
+            elements.append({"type": "text", "text": text[i:next_special]})
             i = next_special
 
     return elements

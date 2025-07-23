@@ -1,10 +1,8 @@
 import pytest
-from slackformat import (
-    md_to_richtext,
-    richtext_to_blockkit,
-    blockkit_to_richtext,
-    blockkit_to_markdown
-)
+from slackformat.converters.md_to_richtext import md_to_richtext
+from slackformat.converters.richtext_to_blockkit import richtext_to_blockkit
+from slackformat.converters.blockkit_to_richtext import blockkit_to_richtext
+from slackformat.converters.blockkit_to_md import blockkit_to_markdown
 
 class TestIntegration:
     
