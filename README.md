@@ -9,6 +9,9 @@
   * **Markdown to Rich Text:** Convert Slack's Markdown to a Rich Text object.
   * **Rich Text to Block Kit:** Convert a Rich Text object to a Block Kit JSON structure.
   * **Block Kit to Rich Text:** Convert Block Kit JSON to a Rich Text object.
+  * **Block Kit to Markdown:** Convert Block Kit JSON to a Markdown string.
+  * **Rich Text to Markdown:** Convert a Rich Text object to a Markdown string.
+  * **Markdown to Block Kit:** A convenience function to convert a Markdown string directly to a Block Kit object.
   * **Comprehensive Formatting Support:** Supports various formatting options including bold, italic, strikethrough, code, links, and lists.
 
 -----
@@ -62,7 +65,7 @@ print(blockkit)
 You can convert a Block Kit JSON structure to a Rich Text object.
 
 ```python
-from slackformat.blockkit_converter import blockkit_to_richtext
+from slackformat import blockkit_to_richtext
 
 blockkit = {
     "type": "section",
@@ -70,6 +73,51 @@ blockkit = {
 }
 richtext = blockkit_to_richtext(blockkit)
 print(richtext)
+```
+
+### Block Kit to Markdown
+
+You can convert a Block Kit JSON structure to a Markdown string.
+
+```python
+from slackformat import blockkit_to_markdown
+
+blockkit = {
+    "type": "section",
+    "text": {"type": "mrkdwn", "text": "*Bold* text"}
+}
+markdown = blockkit_to_markdown(blockkit)
+print(markdown)
+```
+
+### Rich Text to Markdown
+
+You can convert a Rich Text object to a Markdown string.
+
+```python
+from slackformat import richtext_to_markdown
+
+richtext = {
+    "type": "rich_text_section",
+    "elements": [
+        {"type": "text", "text": "Hello "},
+        {"type": "text", "text": "world", "style": {"bold": True}}
+    ]
+}
+markdown = richtext_to_markdown(richtext)
+print(markdown)
+```
+
+### Markdown to Block Kit
+
+You can convert a Markdown string directly to a Block Kit object.
+
+```python
+from slackformat import md_to_blockkit
+
+md = "Hello *bold* and _italic_ text"
+blockkit = md_to_blockkit(md)
+print(blockkit)
 ```
 
 -----
@@ -84,9 +132,13 @@ python -m pytest
 
 The tests cover the following:
 
-  * **Markdown Parser** (`tests/test_md_parser.py`): Tests for converting Markdown to Rich Text.
-  * **Rich Text Converter** (`tests/test_richtext_converter.py`): Tests for converting Rich Text to Block Kit.
-  * **Block Kit Converter** (`tests/test_blockkit_converter.py`): Tests for converting Block Kit to Rich Text.
+  * **Markdown to Rich Text Converter** (`tests/converters/test_md_to_richtext.py`)
+  * **Rich Text to Block Kit Converter** (`tests/converters/test_richtext_to_blockkit.py`)
+  * **Block Kit to Rich Text Converter** (`tests/converters/test_blockkit_to_richtext.py`)
+  * **Block Kit to Markdown Converter** (`tests/converters/test_blockkit_to_md.py`)
+  * **Rich Text to Markdown Converter** (`tests/converters/test_richtext_to_md.py`)
+  * **Markdown to Block Kit Converter** (`tests/converters/test_md_to_blockkit.py`)
+  * **Integration Tests** (`tests/test_integration.py`)
 
 -----
 
