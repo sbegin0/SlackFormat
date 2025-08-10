@@ -32,7 +32,8 @@ def blockkit_to_markdown(blockkit_obj: dict) -> str:
         alt = blockkit_obj.get("alt_text", "image")
         title = extract_text_from_block(blockkit_obj.get("title"))
         if url:
-            return f"![{alt}]({url}{f' \"{title}\"' if title else ''})"
+            title_part = f" \"{title}\"" if title else ""
+            return f"![{alt}]({url}{title_part})"
         return f"*[{alt}]*"
 
     if block_type == "rich_text":
