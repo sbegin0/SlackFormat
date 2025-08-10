@@ -1,5 +1,8 @@
 # SlackFormat
 
+[![CI](https://github.com/sbegin0/SlackFormat/actions/workflows/tests.yml/badge.svg)](https://github.com/sbegin0/SlackFormat/actions/workflows/tests.yml)
+[![codecov](https://codecov.io/gh/sbegin0/SlackFormat/branch/main/graph/badge.svg)](https://codecov.io/gh/OWNER/REPO)
+
 **SlackFormat** is a Python library that enables easy manipulation of Slack messages in any format. It provides a simple and intuitive way to convert between Slack's Markdown, Rich Text, and Block Kit formats.
 
 -----
@@ -128,6 +131,12 @@ To run the tests for this library, you can use `pytest`.
 
 ```bash
 python -m pytest
+```
+
+With coverage reporting (requires `pytest-cov`):
+
+```bash
+pytest --cov=slackformat --cov-report=term-missing --cov-report=xml
 ```
 
 The tests cover the following:
